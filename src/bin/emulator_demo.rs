@@ -1,18 +1,19 @@
 use egui::{
     panel::Side,
-    plot::{Legend, Line, Plot, PlotPoints},
+    plot::{Legend, Line, LineStyle, Plot, PlotPoints},
     Color32,
 };
 use fabricator::{Factory, Network};
 use tch::{nn, Tensor};
 fn main() {
+    println!("starting");
     // Load variables, factory from disk
     let device = tch::Device::cuda_if_available();
     let mut vs = nn::VarStore::new(device);
 
     // Define nn parameters. TODO: store in vs or elsewhere
     let emulator_input: i64 = 1;
-    let emulator_width: i64 = 32;
+    let emulator_width: i64 = 64;
     let emulator_depth: i64 = 2;
     let emulator_output: i64 = 1;
     let n_params: i64 = 3;
@@ -24,7 +25,9 @@ fn main() {
         emulator_width,
         emulator_output,
     );
+    println!("loading emulator");
     vs.load("emulator.ot").expect("failed to load fabricator");
+    println!("loaded emulator");
 
     start_up_demo(factory);
 }
@@ -61,16 +64,20 @@ impl eframe::App for Parabola {
         egui::TopBottomPanel::bottom("bottom").show(ctx, |ui| {
             ui.heading("sick bottom panel bro");
         });
-        egui::SidePanel::new(Side::Right, "plot area").show(ctx, |ui| {
-            let plot = Plot::new("parabola")
-                .legend(Legend::default())
-                .view_aspect(1.0);
-            plot.show(ui, |plot_ui| {
-                let [expected_line, emulator_line] = self.get_lines();
-                plot_ui.line(expected_line);
-                plot_ui.line(emulator_line);
+        egui::SidePanel::new(Side::Right, "plot area")
+            .min_width(500.0)
+            .show(ctx, |ui| {
+                let plot = Plot::new("parabola")
+                    .legend(Legend::default())
+                    .view_aspect(1.0)
+                    .include_y(-2.1 + self.c)
+                    .include_y(2.1 + self.c);
+                plot.show(ui, |plot_ui| {
+                    let [expected_line, emulator_line] = self.get_lines();
+                    plot_ui.line(expected_line);
+                    plot_ui.line(emulator_line);
+                });
             });
-        });
     }
 }
 
@@ -78,8 +85,8 @@ impl Parabola {
     fn new(factory: Factory) -> Self {
         Parabola {
             a: 1.0,
-            b: 1.0,
-            c: 1.0,
+            b: 0.0,
+            c: 0.0,
             factory,
         }
     }
@@ -125,10 +132,15 @@ impl Parabola {
         // Create lines
         let expected_line: Line = Line::new(expected_pairs)
             .color(Color32::from_rgb(200, 100, 200))
-            .name("expected");
+            // .color(Color32::from_rgb(0, 255, 0))
+            .name("expected")
+            .width(2.0);
         let emualator_line: Line = Line::new(emualator_pairs)
             .color(Color32::from_rgb(100, 200, 100))
-            .name("emulator");
+            // .color(Color32::from_rgb(255, 0, 0))
+            .name("emulator")
+            .width(2.0)
+            .style(LineStyle::Dashed { length: 10.0 });
 
         // return lines
         [expected_line, emualator_line]

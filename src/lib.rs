@@ -2,12 +2,14 @@ use std::convert::TryInto;
 
 use tch::{nn, nn::Module, Kind, Tensor};
 
+// pub mod burn_lib;
+
 pub struct Factory {
     pub fc1: nn::Linear,
     fc2: nn::Linear,
     fc3: nn::Linear,
     fc4: nn::Linear,
-    fc5: nn::Linear,
+    pub fc5: nn::Linear,
     n_params: i64,
     emulator_input: i64,
     emulator_depth: i64,
@@ -100,7 +102,7 @@ impl Factory {
 
         // Calculate number of weights and biases and split last layer
         let [num_weights, num_biases]: [i64; 2] = self.emulator_num_weights_and_biases();
-        let weights_and_biases = layer5_output.split_sizes(&[num_weights, num_biases], 1);
+        let weights_and_biases = layer5_output.split_with_sizes(&[num_weights, num_biases], 1);
 
         weights_and_biases
             .try_into()
@@ -133,14 +135,14 @@ impl Factory {
         let mut biases_used = 0;
 
         // Initialize splitting tensors
-        let mut weight_split = weights.split_sizes(
+        let mut weight_split = weights.split_with_sizes(
             &[
                 total_weights - self.emulator_width * self.emulator_input,
                 self.emulator_width * self.emulator_input,
             ],
             1,
         );
-        let mut bias_split = biases.split_sizes(
+        let mut bias_split = biases.split_with_sizes(
             &[total_biases - self.emulator_width, self.emulator_width],
             1,
         );
@@ -166,14 +168,14 @@ impl Factory {
         };
 
         // Perform split for last layer
-        weight_split = weight_split[0].split_sizes(
+        weight_split = weight_split[0].split_with_sizes(
             &[
                 total_weights - self.emulator_output * self.emulator_width - weights_used,
                 self.emulator_output * self.emulator_width,
             ],
             1,
         );
-        bias_split = bias_split[0].split_sizes(
+        bias_split = bias_split[0].split_with_sizes(
             &[
                 total_biases - self.emulator_output - biases_used,
                 self.emulator_output,
@@ -211,7 +213,7 @@ impl Factory {
             let bs;
             if not_final {
                 // Update split if not final
-                weight_split = weight_split.swap_remove(0).split_sizes(
+                weight_split = weight_split.swap_remove(0).split_with_sizes(
                     &[
                         total_weights - self.emulator_width.pow(2) - weights_used,
                         self.emulator_width.pow(2),
@@ -219,7 +221,7 @@ impl Factory {
                     1,
                 );
 
-                bias_split = bias_split.swap_remove(0).split_sizes(
+                bias_split = bias_split.swap_remove(0).split_with_sizes(
                     &[
                         total_biases - self.emulator_width - biases_used,
                         self.emulator_width,
@@ -417,7 +419,7 @@ fn test_two_inner() {
 #[test]
 fn test_tensor_split() {
     let tensor = Tensor::of_slice(&[1.0_f32, 2.0_f32]).reshape(&[1, 2]);
-    let split = tensor.split_sizes(&[1, 1], 1);
+    let split = tensor.split_with_sizes(&[1, 1], 1);
     let split_array: [Tensor; 2] = split.try_into().unwrap();
     assert_eq!(split_array.len(), 2);
     assert_eq!(split_array[0].size(), vec![1, 1]);
@@ -428,7 +430,7 @@ fn test_tensor_split() {
 #[test]
 fn test_tensor_split_1x4() {
     let tensor = Tensor::of_slice(&[1.0_f32, 2.0_f32, 3.0_f32, 4.0_f32]).reshape(&[1, 4]);
-    let split = tensor.split_sizes(&[3, 1], 1);
+    let split = tensor.split_with_sizes(&[3, 1], 1);
     let split_array: [Tensor; 2] = split.try_into().unwrap();
     assert_eq!(split_array.len(), 2);
     assert_eq!(split_array[0].size(), vec![1, 3]);

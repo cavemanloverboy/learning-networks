@@ -250,8 +250,8 @@ fn grad_loss(z: &Tensor, x: &Tensor) -> Tensor {
 
 pub fn gen_sorted_batch(size: i64) -> (Tensor, Tensor, [f32; 2]) {
     // Generate random parameters
-    // mu in [-2, 2]
-    let mu: f32 = rand::random::<f32>() * 4.0 - 2.0;
+    // mu in [-5, 5]
+    let mu: f32 = rand::random::<f32>() * 10.0 - 5.0;
     // sigma in [0.5, 2]
     let sigma: f32 = rand::random::<f32>() * 1.5 + 0.5;
 
@@ -261,7 +261,7 @@ pub fn gen_sorted_batch(size: i64) -> (Tensor, Tensor, [f32; 2]) {
     let z: Vec<f32> = (0..size)
         .map(|_| expected_generator.sample(&mut rng) as f32)
         .collect();
-    let mut x: Vec<f32> = z
+    let x: Vec<f32> = z
         .iter()
         .map(|&z| expected_generator.cdf(z as f64) as f32)
         .collect();

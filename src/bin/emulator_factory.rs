@@ -14,20 +14,21 @@ use fabricator::{gen_batch, loss, Factory};
 pub fn main() -> Result<()> {
     // Define nn parameters
     let emulator_input: i64 = 1;
-    let emulator_width: i64 = 32;
+    let emulator_width: i64 = 16;
     let emulator_depth: i64 = 2;
     let emulator_output: i64 = 1;
     let n_params: i64 = 3;
 
     // Training parameters
+    const CONTINUE_TRAINING: bool = false;
     const BATCHES_PER_EPOCH: usize = 1;
-    const BATCH_SIZE: i64 = 128;
-    const LOG_NUM_EPOCHS: u32 = 7;
+    const BATCH_SIZE: i64 = 32;
+    const LOG_NUM_EPOCHS: u32 = 5;
     const TRAIN_EPOCHS: usize = 10_usize.pow(LOG_NUM_EPOCHS);
 
     // Create factory
     let device = tch::Device::cuda_if_available();
-    let vs = nn::VarStore::new(device);
+    let mut vs = nn::VarStore::new(device);
     let factory = Factory::new(
         &vs.root(),
         n_params,
@@ -41,8 +42,12 @@ pub fn main() -> Result<()> {
     const SAVE_PATH: &'static str = "loss";
 
     // Initialize optimizer
-    let mut lr = 3e-4;
+    let mut lr = 3e-6;
     let mut opt = nn::Adam::default().build(&vs, lr)?;
+
+    if CONTINUE_TRAINING {
+        vs.load("emulator.ot").expect("failed to load fabricator")
+    }
 
     let mut losses = Vec::with_capacity(TRAIN_EPOCHS);
 
@@ -50,7 +55,7 @@ pub fn main() -> Result<()> {
     let mut record = RECORD_START;
 
     let mut next_drop_epoch = 10;
-    let mut next_report_epoch = 10_000;
+    let mut next_report_epoch = 100_000;
 
     let pb = ProgressBar::new(TRAIN_EPOCHS as u64);
     pb.set_style(
@@ -59,7 +64,7 @@ pub fn main() -> Result<()> {
             .unwrap(),
     );
 
-    let mut loss_handles = Vec::with_capacity(100);
+    let mut loss_handles = Vec::with_capacity(TRAIN_EPOCHS / next_report_epoch);
     for epoch in 1..=TRAIN_EPOCHS {
         let mut train_loss = 0f64;
         let mut samples = 0f64;
@@ -108,6 +113,8 @@ pub fn main() -> Result<()> {
     for handle in loss_handles {
         handle.join().unwrap();
     }
+
+    pb.finish();
 
     // Save emulator to disk
     vs.save("emulator.ot").expect("failed to save emulator");
