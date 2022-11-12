@@ -1,6 +1,6 @@
 use std::{io::Read, ops::Sub};
 
-use lazy_static::lazy_static;
+// use lazy_static::lazy_static;
 use linear::{Linear, Vector};
 use serde::{Deserialize, Serialize};
 
@@ -15,11 +15,12 @@ pub struct FullyConnected {
     layers: Vec<Linear>,
 }
 
-pub fn load_emulator(network_config: &Config) -> FullyConnected {
-    let mut bytes = vec![];
-    let mut file = std::fs::File::open("emulator.al").unwrap();
-    file.read_to_end(&mut bytes).unwrap();
-    let weights_and_biases: Vec<(Vec<f32>, Vec<f32>)> = serde_cbor::from_slice(&bytes).unwrap();
+const EMULATOR_BYTES: &'static [u8] = include_bytes!("../emulator.al");
+const GENERATOR_BYTES: &'static [u8] = include_bytes!("../generator.al");
+
+pub fn construct_emulator_factory(network_config: &Config) -> FullyConnected {
+    let weights_and_biases: Vec<(Vec<f32>, Vec<f32>)> =
+        serde_cbor::from_slice(&EMULATOR_BYTES).unwrap();
 
     let config = Config {
         width: 128,
@@ -30,11 +31,9 @@ pub fn load_emulator(network_config: &Config) -> FullyConnected {
     FullyConnected::new(config, weights_and_biases)
 }
 
-pub fn load_generator(network_config: &Config) -> FullyConnected {
-    let mut bytes = vec![];
-    let mut file = std::fs::File::open("generator.al").unwrap();
-    file.read_to_end(&mut bytes).unwrap();
-    let weights_and_biases: Vec<(Vec<f32>, Vec<f32>)> = serde_cbor::from_slice(&bytes).unwrap();
+pub fn construct_generator_factory(network_config: &Config) -> FullyConnected {
+    let weights_and_biases: Vec<(Vec<f32>, Vec<f32>)> =
+        serde_cbor::from_slice(&GENERATOR_BYTES).unwrap();
 
     let config = Config {
         width: 128,

@@ -1,6 +1,8 @@
 use std::ops::Sub;
 
-use minimal_ml::{linear::Vector, load_emulator, utils::construct_network, Config, FullyConnected};
+use minimal_ml::{
+    construct_emulator_factory, linear::Vector, utils::construct_network, Config, FullyConnected,
+};
 use plotly::{
     common::{Line, Marker, MarkerSymbol, Mode},
     ImageFormat, Plot, Scatter,
@@ -14,7 +16,7 @@ fn load_emulator_factory() {
         in_dims: 1,
         out_dims: 1,
     };
-    let factory: FullyConnected = load_emulator(&emulator_config);
+    let factory: FullyConnected = construct_emulator_factory(&emulator_config);
 
     let input = vec![0.6, -0.2, -0.1];
     let emulator_wb: Vec<f32> = factory.forward_batch(&vec![input.clone()]).remove(0);

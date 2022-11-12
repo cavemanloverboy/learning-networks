@@ -5,7 +5,10 @@ use egui::{
     plot::{Bar, BarChart, Legend, Line, LineStyle, Plot, PlotPoints},
     Color32, FontFamily, FontId, RichText, ScrollArea,
 };
-use minimal_ml::{load_emulator, load_generator, utils::construct_network, Config, FullyConnected};
+use minimal_ml::{
+    construct_emulator_factory, construct_generator_factory, utils::construct_network, Config,
+    FullyConnected,
+};
 
 const EMULATOR_CONFIG: Config = Config {
     width: 64,
@@ -21,6 +24,9 @@ const GENERATOR_CONFIG: Config = Config {
     out_dims: 1,
 };
 
+const POST: &'static str = include_str!("post.txt");
+
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let options = eframe::NativeOptions::default();
 
@@ -29,6 +35,25 @@ fn main() {
         options,
         Box::new(|_cc| Box::new(LearningNetworks::new())),
     );
+}
+
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    // Make sure panics are logged using `console.error`.
+    console_error_panic_hook::set_once();
+
+    // Redirect tracing to console.log and friends:
+    tracing_wasm::set_as_global_default();
+
+    let options = eframe::WebOptions::default();
+
+    println!("starting web");
+    eframe::start_web(
+        "learningnetworks",
+        options,
+        Box::new(|_cc| Box::new(LearningNetworks::new())),
+    )
+    .expect("failed to start eframe");
 }
 
 struct LearningNetworks {
@@ -72,7 +97,7 @@ impl eframe::App for LearningNetworks {
 
                         // Body
                         ui.label(
-                            RichText::new(std::fs::read_to_string("site/post.txt").unwrap())
+                            RichText::new(POST)
                                 // .font(FontId::new(16.0, FontFamily::Name("serif".into())))
                                 .color(Color32::WHITE),
                         );
@@ -106,43 +131,43 @@ impl eframe::App for LearningNetworks {
                     .inner;
 
                 // Column 2: Demo area
-                egui::containers::Frame::default().show(&mut columns[1], |ui| {
-                    // //     .frame(columns[1])
-                    // columns[1]
-                    //     // egui::SidePanel::new(Side::Right, "Demos")
-                    //     // .min_width(500.0)
-                    //     .show(ctx, |ui| {
-                    // Get panel dimensions
-                    let height = ui.available_height();
-                    let width = ui.available_width();
-                    let half_height = height / 2.0;
+                // egui::containers::Frame::default().show(&mut columns[1], |ui| {
+                // //     .frame(columns[1])
+                // columns[1]
+                //     // egui::SidePanel::new(Side::Right, "Demos")
+                //     // .min_width(500.0)
+                //     .show(ctx, |ui| {
+                // Get panel dimensions
+                // let height = ui.available_height();
+                // let width = ui.available_width();
+                // let half_height = height / 2.0;
 
-                    // On top half put parabola
-                    let plot = Plot::new("parabola")
-                        .legend(Legend::default())
-                        .include_y(-2.1 + self.parabola.c)
-                        .include_y(2.1 + self.parabola.c)
-                        .width(width)
-                        .height(half_height);
-                    plot.show(ui, |plot_ui| {
-                        let [expected_line, emulator_line] = self.get_lines();
-                        plot_ui.line(expected_line);
-                        plot_ui.line(emulator_line);
-                    });
+                // // On top half put parabola
+                // let plot = Plot::new("parabola")
+                //     .legend(Legend::default())
+                //     .include_y(-2.1 + self.parabola.c)
+                //     .include_y(2.1 + self.parabola.c)
+                //     .width(width)
+                //     .height(half_height);
+                // plot.show(ui, |plot_ui| {
+                //     let [expected_line, emulator_line] = self.get_lines();
+                //     plot_ui.line(expected_line);
+                //     plot_ui.line(emulator_line);
+                // });
 
-                    let plot = Plot::new("Generator Demo")
-                        .legend(Legend::default())
-                        .include_x(-9.0)
-                        .include_x(9.0)
-                        .include_y(1.0)
-                        .width(width)
-                        .height(half_height);
-                    plot.show(ui, |plot_ui| {
-                        let (expected_line, generator_hist) = self.get_figures();
-                        plot_ui.bar_chart(generator_hist);
-                        plot_ui.line(expected_line);
-                    });
-                });
+                // let plot = Plot::new("Generator Demo")
+                //     .legend(Legend::default())
+                //     .include_x(-9.0)
+                //     .include_x(9.0)
+                //     .include_y(1.0)
+                //     .width(width)
+                //     .height(half_height);
+                // plot.show(ui, |plot_ui| {
+                //     let (expected_line, generator_hist) = self.get_figures();
+                //     plot_ui.bar_chart(generator_hist);
+                //     plot_ui.line(expected_line);
+                // });
+                // });
             });
         });
 
@@ -172,8 +197,8 @@ impl eframe::App for LearningNetworks {
 impl LearningNetworks {
     fn new() -> Self {
         // Load emulator and generator
-        let emulator_factory = load_emulator(&EMULATOR_CONFIG);
-        let generator_factory = load_generator(&GENERATOR_CONFIG);
+        let emulator_factory = construct_emulator_factory(&EMULATOR_CONFIG);
+        let generator_factory = construct_generator_factory(&GENERATOR_CONFIG);
         LearningNetworks {
             parabola: ParabolaEmulator {
                 a: 1.0,
@@ -254,7 +279,9 @@ impl LearningNetworks {
         let generator: FullyConnected = construct_network(GENERATOR_CONFIG, generator_wb);
 
         // Get grid (sort shouldn't change results, just plot)
-        let mut x: Vec<Vec<f32>> = (0..NUM_SAMPLES).map(|_| vec![rand::random()]).collect();
+        let mut x: Vec<Vec<f32>> = (0..NUM_SAMPLES)
+            .map(|i| vec![i as f32 / NUM_SAMPLES as f32])
+            .collect();
         x.sort_by(|a, b| a.partial_cmp(&b).unwrap());
         let x_double: Vec<f64> = x.iter().map(|f32_sample| f32_sample[0] as f64).collect();
 
