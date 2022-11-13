@@ -11,7 +11,7 @@ use plotly::{
 #[test]
 fn load_emulator_factory() {
     let emulator_config = Config {
-        width: 64,
+        width: 16,
         hidden_layers: 3,
         in_dims: 1,
         out_dims: 1,
