@@ -10,7 +10,7 @@ fn main() {
 
     // Define nn parameters. TODO: store in vs or elsewhere
     let generator_input: i64 = 1;
-    let generator_width: i64 = 64;
+    let generator_width: i64 = 16;
     let generator_depth: i64 = 2;
     let generator_output: i64 = 1;
     let n_params: i64 = 2;

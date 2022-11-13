@@ -18,7 +18,7 @@ const EMULATOR_CONFIG: Config = Config {
 };
 
 const GENERATOR_CONFIG: Config = Config {
-    width: 64,
+    width: 16,
     hidden_layers: 3,
     in_dims: 1,
     out_dims: 1,

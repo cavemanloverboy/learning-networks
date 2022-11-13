@@ -15,7 +15,7 @@ fn main() {
 
     // Define nn parameters. TODO: store in vs or elsewhere
     let emulator_input: i64 = 1;
-    let emulator_width: i64 = 64;
+    let emulator_width: i64 = 16;
     let emulator_depth: i64 = 2;
     let emulator_output: i64 = 1;
     let n_params: i64 = 2;
