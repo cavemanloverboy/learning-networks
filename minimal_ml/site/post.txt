@@ -1,6 +1,0 @@
-
-Today's networks are often monolithic end-to-end networks. When performing a regression or generative task, for example, an entire trained network is used for every input of interest. However, it is possible to use the output or a sub-network of some network as an independent network. Our work, and this demo, shows the former.
-
-The demo on this website uses a pair of fully connected networks (four hidden layers each with 128 neurons) whose outputs are the weights and biases of a smaller network (3 hidden layers each with 64 neurons). One network is trained on a regression task (the parabola family ax^2 + bx + c for (x,a,b,c) in [-1,1]^4), and the other on a generative task (generating random normals with means in [-5, 5] and standard deviations in [0.5, 2]). These smaller networks are then used to generate the figures on the right.
-
-You can play with the sliders and change the parameter values, which upon being updated will be run through the larger network to reconstruct the smaller networks.

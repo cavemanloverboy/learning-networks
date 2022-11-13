@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::linear::Matrix;
 
 pub mod linear;
+pub mod site;
 pub mod utils;
 
 #[derive(Serialize, Deserialize)]
