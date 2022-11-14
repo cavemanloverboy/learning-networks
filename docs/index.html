@@ -23,8 +23,8 @@
     
 
 
-    <link rel="manifest" href="docs/manifest.json">
-    <link rel="apple-touch-icon" href="docs/icon_ios_touch_192.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon_ios_touch_192.png">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="white">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#404040">
 
@@ -130,7 +130,7 @@
         // We disable caching during development so that we always view the latest version.
         if ('serviceWorker' in navigator && window.location.hash !== "#dev") {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('docs/sw.js');
+                navigator.serviceWorker.register('sw.js');
             });
         }
     </script>
