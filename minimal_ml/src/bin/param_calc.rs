@@ -9,7 +9,7 @@ fn main() {
     };
 
     let small_network = Config {
-        width: 32,
+        width: 16,
         hidden_layers: 3,
         in_dims: 3,
         out_dims: 1,

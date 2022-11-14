@@ -1,0 +1,2 @@
+worker: cargo install trunk
+worker: trunk serve --release
