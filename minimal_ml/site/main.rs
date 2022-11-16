@@ -1,10 +1,3 @@
-use std::f64::consts::PI;
-
-use egui::{
-    panel::Side,
-    plot::{Bar, BarChart, Legend, Line, LineStyle, Plot, PlotPoints},
-    Color32, FontFamily, FontId, RichText, ScrollArea,
-};
 use minimal_ml::site::LearningNetworks;
 
 #[cfg(not(target_arch = "wasm32"))]
