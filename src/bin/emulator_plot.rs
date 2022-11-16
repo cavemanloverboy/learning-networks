@@ -17,7 +17,7 @@ fn main() {
 
     // Define nn parameters. TODO: store in vs or elsewhere
     let emulator_input: i64 = 1;
-    let emulator_width: i64 = 64;
+    let emulator_width: i64 = 16;
     let emulator_depth: i64 = 2;
     let emulator_output: i64 = 1;
     let n_params: i64 = 3;
@@ -67,7 +67,7 @@ fn plot_parabolas(factory: Factory) {
         .y_axis(
             Axis::new()
                 .title(
-                    Title::from("Emulator Output")
+                    Title::from("Emulator\t Output")
                         .font(Font::new().size(FONT_SIZE))
                         .x(0.0),
                 )
@@ -125,5 +125,5 @@ fn plot_parabolas(factory: Factory) {
         plot.add_trace(prediction_trace);
     }
 
-    plot.save("figure1", ImageFormat::PNG, 1024, 680, 1.0);
+    plot.save("figure1", ImageFormat::PDF, 1024, 680, 1.0);
 }
