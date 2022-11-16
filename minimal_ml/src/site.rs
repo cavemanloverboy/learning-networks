@@ -7,7 +7,7 @@ use super::{
 use egui::{
     panel::Side,
     plot::{Bar, BarChart, Legend, Line, LineStyle, Plot, PlotPoints},
-    Color32, FontFamily, FontId, RichText, ScrollArea,
+    Color32, FontFamily, FontId, RichText, ScrollArea, Rect,
 };
 
 const EMULATOR_CONFIG: Config = Config {
@@ -78,12 +78,20 @@ impl eframe::App for LearningNetworks {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             
-            let total_width = ui.available_width();
-            let total_height = ui.available_height();
+            let rect = ctx.available_rect();
+            let total_width = rect.width();
+            let total_height = rect.height();
             let font_scale = (total_width.min(1.5*total_height) / 1000.0).max(1.0);
 
+            let vertical_display = total_height > total_width;
                         
-            ui.columns(2, |columns| {
+            ui.columns(if vertical_display {3} else {2}, |columns| {
+
+                if vertical_display {
+                    columns[0].set_width(total_width * 19.0 / 30.0);
+                    // columns[1].allocate_rect(Rect::everything_right_of(total_width * 2.0 / 3.0), egui::Sense::click_and_drag());
+                } 
+
                 // Column 1: Text
                 let (emulator_changed, generator_changed, resample): (bool, bool, bool) =
                     ScrollArea::vertical()
@@ -146,16 +154,26 @@ impl eframe::App for LearningNetworks {
                         .inner;
 
                 // Column 2: Demo area
-                egui::containers::Frame::default().show(&mut columns[1], |ui| {
-                    //     .frame(columns[1])
-                    // columns[1]
-                    // egui::SidePanel::new(Side::Right, "Demos")
-                    // .min_width(500.0)
-                    // .show(ctx, |ui| {
+                egui::containers::Frame::default().show(&mut columns[if vertical_display {2} else {1}], |ui| {
+
                     // Get panel dimensions
-                    let height = ui.available_height();
-                    let width = ui.available_width();
-                    let half_height = height / 2.0;
+                    let height = 
+                    // if vertical_display {
+                    //     total_height / 3.0
+                    // } else 
+                    {
+                        ui.available_height()
+                    }; 
+                    let width = 
+                    // if vertical_display {
+                    //     total_width / 3.0
+                    // } else 
+                    {
+                        ui.available_width()
+                    };
+                    let half_height = height / if vertical_display { 2.5 } else { 2.0 } ;
+
+                    // ui.set_width(width);
 
                     // On top half put parabola
                     let plot = Plot::new("parabola")
