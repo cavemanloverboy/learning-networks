@@ -266,7 +266,7 @@ impl Factory {
     }
 }
 
-// Reconstruction + KL divergence losses summed over all elements and batch dimension.
+// MSE losses summed over all elements and batch dimension.
 pub fn loss(output: &Tensor, x: &Tensor, params: [f32; 3]) -> Tensor {
     let expected = params[2] + (params[1] * x) + (params[0] * x * x);
     (output - expected).pow_tensor_scalar(2).sum(Kind::Double)
