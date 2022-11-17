@@ -23,6 +23,7 @@ statrs = "0.16.0"
 #burn = "0.2.3"
 serde = "1.0.147"
 serde_cbor = { version = "0.11.2", features = ["std"] }
+itertools = "0.10.5"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
