@@ -15,8 +15,16 @@ fn main() {
         out_dims: 1,
     };
 
+    let monolithic = Config {
+        width: 128,
+        hidden_layers: 4,
+        in_dims: 4,
+        out_dims: 1,
+    };
+
     println!(
-        "big {}, small {}",
+        "mono {} big {}, small {}",
+        network_parameter_calculator(&monolithic),
         network_parameter_calculator(&big_network),
         network_parameter_calculator(&small_network),
     )
