@@ -171,7 +171,7 @@ pub fn plot_losses(losses: Vec<f64>, log_total_num_epochs: u32) {
                         .font(Font::new().size(FONT_SIZE))
                         .x(0.0),
                 )
-                .range(vec![1, 6])
+                .range(vec![1, log_total_num_epochs as i32])
                 .type_(AxisType::Log)
                 .grid_color(NamedColor::DarkGray),
         );
