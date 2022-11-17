@@ -3,6 +3,11 @@ use std::io::Write;
 use anyhow::Result;
 
 use indicatif::{ProgressBar, ProgressStyle};
+use plotly::{
+    common::{Font, Mode, Title},
+    layout::{Axis, AxisType},
+    ImageFormat, Layout, NamedColor, Plot, Scatter,
+};
 use tch::{
     nn::{self, linear, LinearConfig, Module, OptimizerConfig},
     Kind, Tensor,
@@ -14,13 +19,13 @@ fn main() -> Result<()> {
     const EMULATOR_INPUT: i64 = 4;
     const EMULATOR_OUTPUT: i64 = 1;
     const EMULATOR_WIDTH: i64 = 128;
-    const EMULATOR_DEPTH: i64 = 4 + 593 / EMULATOR_WIDTH;
+    const EMULATOR_DEPTH: i64 = 5;
 
     // Training parameters
     const BATCHES_PER_EPOCH: usize = 1;
-    const BATCH_SIZE: i64 = 128;
-    const TRAIN_EPOCHS: usize = 10_000_000;
-    const TEST_EPOCHS: usize = 1_000;
+    const BATCH_SIZE: i64 = 32;
+    const LOG_NUM_EPOCHS: u32 = 7;
+    const TRAIN_EPOCHS: usize = 10_usize.pow(LOG_NUM_EPOCHS);
 
     // Create factory-sized emulator
     let device = tch::Device::cuda_if_available();
@@ -49,6 +54,16 @@ fn main() -> Result<()> {
         EMULATOR_OUTPUT,
         LinearConfig::default(),
     ));
+    println!(
+        "num vars; {}",
+        vs.variables_
+            .lock()
+            .unwrap()
+            .trainable_variables
+            .iter()
+            .map(|var| var.tensor.size().into_iter().fold(1, |acc, x| acc * x))
+            .sum::<i64>()
+    );
 
     // Initialize optimizer
     let lr = 3e-4;
@@ -58,6 +73,7 @@ fn main() -> Result<()> {
 
     let mut record = RECORD_START;
     let mut next_drop_epoch = 10;
+    let mut next_report_epoch = 100_000;
 
     let pb = ProgressBar::new(TRAIN_EPOCHS as u64);
     pb.set_style(
@@ -68,6 +84,7 @@ fn main() -> Result<()> {
 
     let mut losses = Vec::with_capacity(TRAIN_EPOCHS);
 
+    let mut loss_handles = Vec::with_capacity(TRAIN_EPOCHS / next_report_epoch);
     for epoch in 1..=TRAIN_EPOCHS {
         let mut train_loss = 0f64;
         let mut samples = 0f64;
@@ -100,6 +117,13 @@ fn main() -> Result<()> {
             // lr *= 0.995;
             // opt.set_lr(lr);
         }
+        if epoch == next_report_epoch {
+            next_report_epoch += 100_000;
+            let loss_clone = losses.clone();
+            loss_handles.push(std::thread::spawn(|| {
+                plot_losses(loss_clone, LOG_NUM_EPOCHS);
+            }));
+        }
 
         // Increment epoch counter and update pb message
         pb.inc(1);
@@ -110,7 +134,7 @@ fn main() -> Result<()> {
 
     // Finish training this model, save losses
     pb.finish();
-    let model_name: String = format!("{EMULATOR_WIDTH}_{EMULATOR_DEPTH}");
+    let model_name: String = format!("{EMULATOR_WIDTH}_{EMULATOR_DEPTH}_em");
     save_losses(&losses, &model_name);
 
     vs.save("monolithic.ot").unwrap();
@@ -142,4 +166,47 @@ pub fn loss(output: &Tensor, xabc: &Tensor) -> Tensor {
     let Result::<[Tensor; 4], _>::Ok([x, a, b, c]) = xabc.split_sizes(&[1, 1, 1, 1], 1).try_into() else { panic!() };
     let expected = c + (b * &x) + (a * &x * x);
     (output - expected).pow_tensor_scalar(2).sum(Kind::Double)
+}
+
+pub fn plot_losses(losses: Vec<f64>, log_total_num_epochs: u32) {
+    // x-axis is just epochs
+    let epochs: Vec<usize> = (1..=losses.len()).collect();
+
+    // Create loss trace
+    let loss_trace = Scatter::new(epochs, losses).mode(Mode::Lines).name("loss");
+
+    // Create plot and add loss trace
+    let mut plot = Plot::new();
+    plot.add_trace(loss_trace);
+
+    const FONT_SIZE: usize = 16;
+
+    // Change layout
+    let layout = Layout::new()
+        .y_axis(
+            Axis::new()
+                .title(Title::from("Loss").font(Font::new().size(FONT_SIZE)).x(0.0))
+                .type_(AxisType::Log)
+                // .tick_values(
+                //     vec![1.0, 5.0, 10.0, 20.0, 30.0, 40.0]
+                //         .into_iter()
+                //         .filter(|&x| x > MIN_R && x < MAX_R)
+                //         .collect(),
+                // )
+                .grid_color(NamedColor::DarkGray),
+        )
+        .x_axis(
+            Axis::new()
+                .title(
+                    Title::from("Epoch")
+                        .font(Font::new().size(FONT_SIZE))
+                        .x(0.0),
+                )
+                .range(vec![1, 6])
+                .type_(AxisType::Log)
+                .grid_color(NamedColor::DarkGray),
+        );
+    plot.set_layout(layout);
+
+    plot.save("monolithic_losses.png", ImageFormat::PNG, 1024, 680, 1.0);
 }
