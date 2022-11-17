@@ -251,7 +251,7 @@ pub fn network_parameter_calculator(config: &Config) -> usize {
     // First layer
     config.width * config.in_dims  + config.width
     // Inner layers
-    + config.hidden_layers.sub(1) * (config.width.pow(2) + config.width)
+    + config.hidden_layers.saturating_sub(1) * (config.width.pow(2) + config.width)
     // Final layer
     + config.out_dims * config.width + config.out_dims
 }
